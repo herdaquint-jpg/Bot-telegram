@@ -1,15 +1,24 @@
-from telegram.ext import Updater, CommandHandler
+from telegram import Update
+from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 
-def start(update, context):
-    update.message.reply_text("Hola! Soy tu bot funcionando con polling en Render")
+import os
+TOKEN = os.getenv("BOT_TOKEN")
 
-def main():
-    updater = Updater("TU_TOKEN_DE_TELEGRAM")
-    dp = updater.dispatcher
-    dp.add_handler(CommandHandler("start", start))
-    updater.start_polling()
-    updater.idle()
+async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    mensaje = update.message.text.lower()
 
-if __name__ == "__main__":
-    main()
+    # Ejemplo de respuesta automática
+    if "hola" in mensaje:
+        await update.message.reply_text("¡Hola! 👋 Soy el bot del grupo.")
+    elif "gracias" in mensaje:
+        await update.message.reply_text("¡De nada! 😊")
+    else:
+        await update.message.reply_text("No entendí, pero aquí estoy 🤖")
 
+app = ApplicationBuilder().token(TOKEN).build()
+
+# Escucha todos los mensajes que no son comandos
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, responder))
+
+print("✅ Bot escuchando mensajes en grupo...")
+app.run_polling()
