@@ -1,6 +1,6 @@
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
-TOKEN = "AQUI_VA_TU_TOKEN"  # O usa Environment Variables
+TOKEN = "8252246500:AAHoJ9oW4Xh4iIXVE3VhfM6EntRKcSdrL4Y"  # O usa Environment Variables
 
 # Tabla de respuestas automáticas
 RESPUESTAS = {
@@ -81,3 +81,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
