@@ -47,16 +47,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def auto_responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower()
 
-    if "hola" in text:
-        await update.message.reply_text("¡Hola! ¿Cómo estás?")
-    elif "precio" in text:
-        await update.message.reply_text("Te envío la info de precios por privado 📩")
-    elif "gracias" in text:
-        await update.message.reply_text("¡Con gusto! 😊")
-    elif "adios" in text or "chao" in text:
-        await update.message.reply_text("¡Hasta pronto! 👋")
-    elif "info" in text:
-        await update.message.reply_text(
+    respuestas = {
+        "hola": "¡Hola! 👋 ¿Cómo estás?",
+        "buenos días": "☀️ ¡Muy buenos días! Espero que tengas un gran día.",
+        "buenas tardes": "🌞 ¡Buenas tardes! ¿Cómo va tu día?",
+        "buenas noches": "🌙 ¡Buenas noches! Que descanses.",
+        "precio": "💰 Te envío la info de precios por privado 📩",
+        "info": (
             "📌 Información:\n"
             "Hola soy @K1104m (ÚNICO TELEGRAM EXISTENTE)\n"
             "Cuenta de insta: @tatamoreno11\n"
@@ -64,7 +61,22 @@ async def auto_responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contenido personalizado\n"
             "Solicitar métodos de pago.\n"
             "Contacto:  @K1104m"
-        )
+        ),
+        "gracias": "🙏 ¡Con gusto! 😊",
+        "adios": "👋 ¡Hasta pronto!",
+        "chao": "👋 ¡Chao! Cuídate.",
+        "listo": "✅ Perfecto.",
+        "ok": "👌",
+        "qué tal": "Todo bien por aquí, ¿y tú?",
+        "como estas": "😊 Estoy bien, gracias por preguntar. ¿Y tú?",
+        "me interesa": "📩 Genial, escríbeme por privado para más detalles.",
+        "contacto": "📲 Puedes escribirme aquí mismo o a @K1104m"
+    }
+
+    for palabra, respuesta in respuestas.items():
+        if palabra in text:
+            await update.message.reply_text(respuesta)
+            break
 
 # =========================
 # MENSAJE DE BIENVENIDA EN GRUPOS
@@ -101,4 +113,3 @@ if __name__ == "__main__":
 
     # Bot en el hilo principal
     asyncio.run(main())
-
