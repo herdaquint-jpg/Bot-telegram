@@ -1,115 +1,85 @@
 import os
-import asyncio
-import threading
-from flask import Flask
+import logging
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# =========================
-# TOKEN DEL BOT
-# =========================
+# Configuración de logs (útil para depuración en Render)
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
+# Cargar el token desde variable de entorno
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
-    raise ValueError("⚠ No se encontró el token. Configura BOT_TOKEN en Render.")
+    raise ValueError("⚠️ No se encontró la variable BOT_TOKEN en el entorno.")
 
-# =========================
-# FLASK PARA RENDER
-# =========================
-app = Flask(__name__)
+# Diccionario para registrar últimos mensajes y evitar spam
+last_messages = {}
 
-@app.route("/")
-def home():
-    return "Bot activo 🚀"
-
-# =========================
-# COMANDOS
-# =========================
+# -------- Comandos --------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Hola! Soy tu bot y estoy funcionando 🚀")
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📌 Comandos disponibles:\n"
-        "/start - Inicia el bot\n"
-        "/help - Muestra esta ayuda\n"
-        "Además, responde automáticamente a palabras clave como: hola, precio, info, gracias..."
+        "👋 ¡Hola! Soy tu bot de Telegram.\nEscribe /ayuda para ver lo que puedo hacer."
     )
 
-# =========================
-# RESPUESTAS AUTOMÁTICAS
-# =========================
-async def auto_responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "📌 Comandos disponibles:\n"
+        "/start - Iniciar conversación\n"
+        "/ayuda - Mostrar esta ayuda\n"
+        "/info - Información sobre el bot\n"
+        "\n💬 También respondo a mensajes con palabras clave como 'hola', 'gracias', 'adiós'."
+    )
+
+async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🤖 Bot de ejemplo para responder automáticamente en grupos y chats privados."
+    )
+
+# -------- Respuestas automáticas --------
+async def auto_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
     text = update.message.text.lower()
 
-    respuestas = {
-        "hola": "¡Hola! 👋 ¿Cómo estás?",
-        "buenos días": "☀️ ¡Muy buenos días! Espero que tengas un gran día.",
-        "buenas tardes": "🌞 ¡Buenas tardes! ¿Cómo va tu día?",
-        "buenas noches": "🌙 ¡Buenas noches! Que descanses.",
-        "precio": "💰 Te envío la info de precios por privado 📩",
-        "info": (
-            "📌 Información:\n"
-            "Hola soy @K1104m (ÚNICO TELEGRAM EXISTENTE)\n"
-            "Cuenta de insta: @tatamoreno11\n"
-            "Un mes entero mi canal privado info priv\n"
-            "Contenido personalizado\n"
-            "Solicitar métodos de pago.\n"
-            "Contacto:  @K1104m"
-        ),
-        "gracias": "🙏 ¡Con gusto! 😊",
-        "adios": "👋 ¡Hasta pronto!",
-        "chao": "👋 ¡Chao! Cuídate.",
-        "listo": "✅ Perfecto.",
-        "ok": "👌",
-        "qué tal": "Todo bien por aquí, ¿y tú?",
-        "como estas": "😊 Estoy bien, gracias por preguntar. ¿Y tú?",
-        "me interesa": "📩 Genial, escríbeme por privado para más detalles.",
-        "contacto": "📲 Puedes escribirme aquí mismo o a @K1104m"
-    }
+    # Anti-spam: no responder dos veces seguidas lo mismo al mismo usuario
+    if last_messages.get(user_id) == text:
+        return
+    last_messages[user_id] = text
 
-    for palabra, respuesta in respuestas.items():
-        if palabra in text:
-            await update.message.reply_text(respuesta)
-            break
+    if "hola" in text:
+        await update.message.reply_text("¡Hola! 👋")
+    elif "gracias" in text:
+        await update.message.reply_text("¡De nada! 😊")
+    elif "adiós" in text or "chao" in text:
+        await update.message.reply_text("¡Hasta luego! 👋")
+    elif "bot" in text:
+        await update.message.reply_text("Sí, aquí estoy 🤖")
 
-# =========================
-# MENSAJE DE BIENVENIDA EN GRUPOS
-# =========================
-async def welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# -------- Bienvenida --------
+async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for member in update.message.new_chat_members:
-        await update.message.reply_text(f"🎉 Bienvenido/a {member.full_name} al grupo.")
+        await update.message.reply_text(f"🎉 Bienvenido/a {member.first_name} al grupo.")
 
-# =========================
-# MAIN DEL BOT
-# =========================
+# -------- Main --------
 async def main():
-    bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # Comandos
-    bot_app.add_handler(CommandHandler("start", start))
-    bot_app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("ayuda", ayuda))
+    app.add_handler(CommandHandler("info", info))
 
-    # Respuestas automáticas
-    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_responder))
+    # Bienvenida
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
 
-    # Bienvenida a nuevos miembros
-    bot_app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome_message))
+    # Respuestas automáticas a mensajes
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_reply))
 
-    print("🤖 Bot iniciado y escuchando mensajes...")
-    await bot_app.run_polling(close_loop=False)  # Para que no cierre el loop de Flask
+    logger.info("✅ Bot iniciado y ejecutándose...")
+    await app.run_polling()
 
-# =========================
-# EJECUCIÓN
-# =========================
 if __name__ == "__main__":
-    # Flask en segundo plano
-    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))).start()
-
-    # Bot en el hilo principal
+    import asyncio
     asyncio.run(main())
+
