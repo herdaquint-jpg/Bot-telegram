@@ -1,84 +1,60 @@
+from flask import Flask
+import threading
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+import os
 
-TOKEN = "8252246500:AAHoJ9oW4Xh4iIXVE3VhfM6EntRKcSdrL4Y"  # O usa Environment Variables
+# -----------------------------
+# Servidor web para Render
+# -----------------------------
+app = Flask(__name__)
 
-# Tabla de respuestas automáticas
-RESPUESTAS = {
-    # Saludos
-    "hola": "¡Hola! 😄 ¿Cómo estás?",
-    "buenos días": "¡Muy buenos días! ☀️",
-    "buenas tardes": "¡Buenas tardes! 🌇",
-    "buenas noches": "¡Buenas noches! 🌙",
-    "qué tal": "¡Todo bien! ¿Y tú? 😊",
+@app.route('/')
+def home():
+    return "Bot de Telegram funcionando ✅"
 
-    # Información
-    "información": (
-        "📌 Hola soy @K1104m (ÚNICO TELEGRAM EXISTENTE)\n"
-        "📷 Instagram: @tatamoreno11\n"
-        "💬 Contenido personalizado\n"
-        "💳 Solicita métodos de pago."
-    ),
-    "info": (
-        "📌 Hola soy @K1104m (ÚNICO TELEGRAM EXISTENTE)\n"
-        "📷 Instagram: @tatamoreno11\n"
-        "💬 Contenido personalizado\n"
-        "💳 Solicita métodos de pago."
-    ),
+def run_web():
+    app.run(host='0.0.0.0', port=10000)
 
-    # Precios
-    "precios": "💰 Escríbeme por privado para enviarte la lista de precios.",
-    "tarifas": "💰 Escríbeme por privado para enviarte la lista de precios.",
-    "cuánto vale": "💰 Escríbeme por privado para enviarte la lista de precios.",
-    "valor": "💰 Escríbeme por privado para enviarte la lista de precios.",
-
-    # Agradecimientos
-    "gracias": "¡Con gusto! 💕",
-    "muchas gracias": "¡De nada! 😊",
-    "mil gracias": "Siempre a la orden 💖",
-
-    # Despedidas
-    "adiós": "¡Hasta luego! 👋",
-    "hasta luego": "¡Nos vemos! 🙌",
-    "chao": "¡Chao! 🌸",
-
-    # Otros
-    "ok": "👌",
-    "listo": "Perfecto ✅",
-    "perfecto": "Genial 😎"
-}
-
-# Comando /start
+# -----------------------------
+# Funciones del Bot
+# -----------------------------
 async def start(update, context):
-    await update.message.reply_text(
-        "¡Hola! 👋 Soy TataMorenoBot.\n"
-        "Puedes escribirme palabras como:\n"
-        "- hola / buenos días / buenas tardes\n"
-        "- información / info\n"
-        "- precios / tarifas / cuánto vale / valor\n"
-        "- gracias / muchas gracias\n"
-        "- adiós / hasta luego / chao"
-    )
+    await update.message.reply_text("Hola 👋, soy tu bot y estoy activo.")
 
-# Función de respuesta automática
 async def responder(update, context):
-    texto = update.message.text.lower().strip()
+    mensaje = update.message.text.lower()
 
-    for clave, respuesta in RESPUESTAS.items():
-        if clave in texto:
-            await update.message.reply_text(respuesta)
-            return
+    # Ejemplos de respuestas automáticas
+    if "hola" in mensaje:
+        await update.message.reply_text("¡Hola! ¿Cómo estás?")
+    elif "adiós" in mensaje or "chao" in mensaje:
+        await update.message.reply_text("¡Hasta luego! 👋")
+    elif "precio" in mensaje:
+        await update.message.reply_text("Envíame un mensaje privado para enviarte la lista de precios 📋")
+    else:
+        await update.message.reply_text("Recibí tu mensaje 😉")
 
-    await update.message.reply_text(
-        "No entiendo muy bien 🤔, pero puedes pedirme 'información' o 'precios'."
-    )
+# -----------------------------
+# Inicializar Bot y Web
+# -----------------------------
+async def main():
+    token = os.getenv("TELEGRAM_TOKEN")  # Usa variable de entorno
+    app_bot = ApplicationBuilder().token(token).build()
 
-# Función principal
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, responder))
-    app.run_polling()
+    # Comandos
+    app_bot.add_handler(CommandHandler("start", start))
 
-if __name__ == "__main__":
-    main()
+    # Responder a cualquier mensaje en grupos
+    app_bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, responder))
 
+    print("Bot iniciado ✅")
+    await app_bot.run_polling()
+
+if __name__ == '__main__':
+    # Iniciar servidor web en un hilo
+    web_thread = threading.Thread(target=run_web)
+    web_thread.start()
+
+    # Iniciar bot
+    import asyncio
+    asyncio.run(main())
