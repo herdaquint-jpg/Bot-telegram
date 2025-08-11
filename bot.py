@@ -3,27 +3,47 @@ import asyncio
 import threading
 from flask import Flask
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters
+)
 
-# ==============================
-#  LEER TOKEN DESDE VARIABLES DE ENTORNO
-# ==============================
+# =========================
+# TOKEN DEL BOT
+# =========================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
-    raise ValueError("⚠ No se encontró el token del bot. Configura BOT_TOKEN en Render.")
+    raise ValueError("⚠ No se encontró el token. Configura BOT_TOKEN en Render.")
 
-# ==============================
-#  COMANDOS DEL BOT
-# ==============================
+# =========================
+# FLASK PARA RENDER
+# =========================
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Bot activo 🚀"
+
+# =========================
+# COMANDOS
+# =========================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("¡Hola! Soy tu bot y estoy funcionando 🚀")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Comandos disponibles:\n/start - Inicia el bot\n/help - Muestra esta ayuda")
+    await update.message.reply_text(
+        "📌 Comandos disponibles:\n"
+        "/start - Inicia el bot\n"
+        "/help - Muestra esta ayuda\n"
+        "Además, responde automáticamente a palabras clave como: hola, precio, info, gracias..."
+    )
 
-# ==============================
-#  RESPUESTAS AUTOMÁTICAS
-# ==============================
+# =========================
+# RESPUESTAS AUTOMÁTICAS
+# =========================
 async def auto_responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower()
 
@@ -46,29 +66,16 @@ async def auto_responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Contacto:  @K1104m"
         )
 
-# ==============================
-#  MENSAJE DE BIENVENIDA EN GRUPOS
-# ==============================
+# =========================
+# MENSAJE DE BIENVENIDA EN GRUPOS
+# =========================
 async def welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for member in update.message.new_chat_members:
         await update.message.reply_text(f"🎉 Bienvenido/a {member.full_name} al grupo.")
 
-# ==============================
-#  FLASK PARA RENDER
-# ==============================
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "Bot activo ✅"
-
-def run_flask():
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
-# ==============================
-#  FUNCIÓN PRINCIPAL DEL BOT
-# ==============================
+# =========================
+# MAIN DEL BOT
+# =========================
 async def main():
     bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -79,18 +86,18 @@ async def main():
     # Respuestas automáticas
     bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_responder))
 
-    # Mensaje de bienvenida
+    # Bienvenida a nuevos miembros
     bot_app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome_message))
 
     print("🤖 Bot iniciado y escuchando mensajes...")
-    await bot_app.run_polling()
+    await bot_app.run_polling(close_loop=False)  # Para que no cierre el loop de Flask
 
-# ==============================
-#  EJECUCIÓN
-# ==============================
+# =========================
+# EJECUCIÓN
+# =========================
 if __name__ == "__main__":
-    # Flask en hilo secundario
-    threading.Thread(target=run_flask, daemon=True).start()
+    # Flask en segundo plano
+    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))).start()
 
     # Bot en el hilo principal
     asyncio.run(main())
