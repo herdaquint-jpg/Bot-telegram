@@ -1,43 +1,38 @@
-import os
 import logging
+import os
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters,
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
+# Configurar logs (para ver errores en Render)
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-if not BOT_TOKEN:
-    raise ValueError("❌ BOT_TOKEN no está configurado en Render")
+BOT_TOKEN = os.getenv("BOT_TOKEN")  # recuerda definirlo en Render → Environment
 
 # --- Comandos ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Hola, soy un bot funcionando con PTB 20.x en Render 🚀")
+    await update.message.reply_text("👋 Hola! Soy tu bot y estoy en línea 🚀")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📖 Comandos disponibles:\n/start - Inicia el bot\n/help - Ayuda")
+    await update.message.reply_text("ℹ️ Estos son los comandos disponibles:\n/start - iniciar\n/help - ayuda")
 
-# --- Mensajes normales ---
+# --- Mensajes de texto ---
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(f"🔁 Me dijiste: {update.message.text}")
+    await update.message.reply_text(f"🔁 Dijiste: {update.message.text}")
 
-# --- Configuración principal ---
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    # Handlers de comandos
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
+
+    # Handler para cualquier texto
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
-    logging.info("🤖 Bot iniciado correctamente...")
+    # Arrancar bot
     app.run_polling()
 
 if __name__ == "__main__":
