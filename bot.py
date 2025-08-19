@@ -9,7 +9,6 @@ from telegram.ext import (
     filters,
 )
 
-# Configuración de logs
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
@@ -34,11 +33,8 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Handlers de comandos
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
-
-    # Handler para texto
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     logging.info("🤖 Bot iniciado correctamente...")
